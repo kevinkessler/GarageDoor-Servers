@@ -1,0 +1,11 @@
+var config={}
+
+config.deviceID=<<PUT DEVICE ID HERE>>;
+config.access_token=<<PUT ACCESS TOKEN HERE>>;
+config.toAddrs=<<COMMA DELIMITED LIST OF TEXt EMAIL ADDRESSES>>;
+config.closeTime=900;
+config.heartbeatTimeout=300;
+config.gmailUser=<<GMAIL USER ID>>;
+config.gmailPass=<<GMAIL PASSWORD>>;
+
+module.exports = config;
