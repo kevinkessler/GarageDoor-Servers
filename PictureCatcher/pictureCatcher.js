@@ -1,10 +1,45 @@
 var config=require('./config.js');
 
-var net=require('net');
-var fs = require('fs');
+var net=require('net'),
+    fs = require('fs'),
+    path = require('path');
 
 var HOST = '0.0.0.0';
 var PORT = config.port;
+
+setInterval(function() {
+    fs.readdir(config.picpath, function(err,files){
+        if(err)
+        {
+            console.log("Error Reading Directory:"+config.picpath);
+            console.log(err);
+        }
+
+        files.forEach(function(f){
+            var fname=path.join(config.picpath,f);
+            fs.stat(fname,function(err,stats){
+                if(err)
+                {
+                    console.log("Error stating file:"+fname);
+                    console.log(err);
+                }
+                if(stats.isFile())
+                {
+                    var age=Date.now() - stats.mtime
+                    if(age > config.maxAgeInSecs * 1000)
+                    fs.unlink(fname,function(err){
+                        if(err)
+                        {
+                            console.log("Error deleting file:"+fname);
+                            console.log(err);
+                        }
+                        console.log(fname+" deleted");
+                    });
+                }
+            });
+        });
+    });
+},3600000);
 
 net.createServer(function(sock) {
     
@@ -15,7 +50,7 @@ net.createServer(function(sock) {
     console.log('Filename: '+fileName);
     fs.open(fileName,'a',0666, function (err,fd){
     	if(err)
-    		console.error(error);
+    		console.error(err);
     	desc=fd;
 
     });
@@ -26,7 +61,7 @@ net.createServer(function(sock) {
         var buf=new Buffer(data);
         fs.write(desc,data,null,'binary',function(err,written){
         	if(err)
-        		console.error(error);
+        		console.error(err);
 
         	console.log("Bytes written: "+written);
 

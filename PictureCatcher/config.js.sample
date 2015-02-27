@@ -1,7 +1,0 @@
-var config={}
-
-config.port=12345;
-config.prefix='garage';
-config.picpath='/Pictures';
-
-module.exports=config;
