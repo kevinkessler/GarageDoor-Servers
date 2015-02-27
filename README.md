@@ -1,1 +1,1 @@
-NodeJS Server for the Raspberry Pi Supporting the Garage Door Project
+NodeJS Servers for the Raspberry Pi Supporting the Garage Door Project
