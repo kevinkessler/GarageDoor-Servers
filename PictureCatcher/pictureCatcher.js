@@ -57,13 +57,10 @@ net.createServer(function(sock) {
 
     sock.on('data', function(data) {
         
-        console.log('DATA ' + sock.remoteAddress + ': ' + data);
         var buf=new Buffer(data);
         fs.write(desc,data,null,'binary',function(err,written){
         	if(err)
         		console.error(err);
-
-        	console.log("Bytes written: "+written);
 
         });
         
