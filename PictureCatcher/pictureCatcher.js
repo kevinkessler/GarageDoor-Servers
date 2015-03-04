@@ -72,6 +72,11 @@ net.createServer(function(sock) {
         	console.log("Close "+fileName);
         })
     });
+
+    sock.on('error', function(err) {
+        console.log(err);
+    });
+
     
 }).listen(PORT, HOST);
 
@@ -84,8 +89,9 @@ function tStamp(theTime)
 	var hs=zeroOut(theTime.getHours());
 	var mins=zeroOut(theTime.getMinutes());
 	var ss=zeroOut(theTime.getSeconds());
+	var day=zeroOut(theTime.getDate());
 
-	return ""+theTime.getFullYear()+ms+theTime.getDate()+hs+mins+ss;
+	return ""+theTime.getFullYear()+ms+day+hs+mins+ss;
 }
 
 function zeroOut(n)
