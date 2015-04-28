@@ -1,0 +1,1 @@
+nohup node GarageDoor.js > garagedoor.out 2> garagedoor.err &

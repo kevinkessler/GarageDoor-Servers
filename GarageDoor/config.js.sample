@@ -1,0 +1,15 @@
+var config={}
+
+config.deviceID='<<DEVICE ID>>';
+config.access_token='<<ACCESS TOKEN>>';
+config.toAddrs="<<ALERT EMAIL ADDRESSES>>";
+config.holdTime=3600;
+config.heartbeatTimeout=300;
+config.gmailUser="<<GMAIL USER ID>>@gmail.com";
+config.gmailPass="<<GMAIl PASSWORD>>";
+
+config.port=12345;
+config.prefix='garage';
+config.picpath='./jpgs';
+
+module.exports = config;

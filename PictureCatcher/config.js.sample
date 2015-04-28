@@ -1,8 +1,0 @@
-var config={}
-
-config.port=12345;
-config.prefix='garage';
-config.picpath='./jpg';
-config.maxAgeInSecs=172800;	// 2 Days
-
-module.exports=config;
