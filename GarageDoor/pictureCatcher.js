@@ -1,8 +1,9 @@
 var config=require('./config.js');
 
-var net=require('net'),
-    fs = require('fs'),
-    path = require('path');
+var net=require('net')
+    ,fs = require('fs')
+    ,path = require('path')
+    ,gd = require('./googleDrive.js');
 
 var HOST = '0.0.0.0';
 var PORT = config.port;
@@ -51,16 +52,16 @@ exports.startCatcher=function() {
         var fileName=config.picpath+'/'+config.prefix+tStamp(new Date())+'.jpg';
         //console.log('Filename: '+fileName);
         fs.open(fileName,'a',0666, function (err,fd){
-        	if(err)
-        		console.error(err);
-        	desc=fd;
+            if(err)
+                console.error(err);
+            desc=fd;
 
             sock.on('data', function(data) {
                 
                 var buf=new Buffer(data);
                 fs.write(desc,data,null,'binary',function(err,written){
-                	if(err) {
-                		console.error(err);
+                    if(err) {
+                        console.error(err);
                         console.log(fd);
                     }
 
@@ -71,8 +72,9 @@ exports.startCatcher=function() {
             
             sock.on('close', function(data) {
                 fs.close(desc,function(){
-                	//console.log("Close "+fileName);
+                    //console.log("Close "+fileName);
                     lastPic=fileName;
+                    gd.saveGoogleJpg(fileName,config.googleDriveFolder);
                 })
             });
 
@@ -94,17 +96,17 @@ exports.getLastFile=function() {
 
 function tStamp(theTime)
 {
-	var ms=zeroOut(theTime.getMonth()+1);
-	var hs=zeroOut(theTime.getHours());
-	var mins=zeroOut(theTime.getMinutes());
-	var ss=zeroOut(theTime.getSeconds());
-	var day=zeroOut(theTime.getDate());
+    var ms=zeroOut(theTime.getMonth()+1);
+    var hs=zeroOut(theTime.getHours());
+    var mins=zeroOut(theTime.getMinutes());
+    var ss=zeroOut(theTime.getSeconds());
+    var day=zeroOut(theTime.getDate());
 
-	return ""+theTime.getFullYear()+ms+day+hs+mins+ss;
+    return ""+theTime.getFullYear()+ms+day+hs+mins+ss;
 }
 
 function zeroOut(n)
 {
-	return (n<10) ? "0" + n : "" + n;
+    return (n<10) ? "0" + n : "" + n;
 }
 

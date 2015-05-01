@@ -3,10 +3,10 @@ var config=require('./config.js');
 var EventSource = require('eventsource')
 	,nodemailer=require('nodemailer')
 	,debug=require('debug')('texter')
-    ,util=require('util')
-    ,pc=require('./pictureCatcher.js')
-    ,https=require('https')
-    ,os=require('os');
+	,util=require('util')
+	,pc=require('./pictureCatcher.js')
+	,https=require('https')
+	,os=require('os');
 
 var deviceID=config.deviceID;
 var access_token=config.access_token;
@@ -43,10 +43,11 @@ es.addEventListener("garagedoor-event", function(e) {
 	selectEvent(doorState);	
 });
 
+var heartbeat=setInterval(function() {
+	sendConfig();
+},3600*1000);
 pc.startCatcher();
 sendConfig();
-fcPic=1;
-takePicture();
 
 function smsMessage(mes) {
 	smtp.sendMail({
@@ -91,27 +92,36 @@ function selectEvent(doorState) {
 	switch(doorState.data) {
 		case "OPEN":
 			console.log(new Date().toString()+": Door is Opened");
+			debug(new Date().toString+": "+doorState.data);
 			break;
 		case "CLOSED":
 			clearInterval(holdTimeout);
 			console.log(new Date().toString()+": Door is closed");
+			debug(new Date().toString+": "+doorState.data);
 			break;
 		case "HOLD-OPEN":
 			console.log(new Date().toString()+": Hold Button Activated");
+			debug(new Date().toString+": "+doorState.data);
+			takePicture();
 			holdTimeout=setInterval(function() {
 				console.log("Garage Door Held Open Alert");
-				smsMessage("Garage Door is Being Held Open");
+				debug(new Date().toString+": "+doorState.data);
+				smsPicMessage("Garage Door is Being Held Open",pc.getLastFile());
+				takePicture();
 			},config.holdTime);
 			break;
 		case "CONFIGURE":
 			console.log(new Date().toString()+": Configure Requested");
+			debug(new Date().toString+": "+doorState.data);
 			sendConfig();
 			break;
 		case "MOTION":
 			console.log(new Date().toString()+": Motion Detected");
+			debug(new Date().toString+": "+doorState.data);
 			break;
 		case "FORCE-CLOSE":
 			console.log(new Date().toString()+": Force Closed");
+			debug(new Date().toString+": "+doorState.data);
 			takePicture();
 			fcPic=1;
 			break;
@@ -120,6 +130,10 @@ function selectEvent(doorState) {
 				smsPicMessage("Garage Door Automatically Closed", pc.getLastFile());
 				fcPic=0;
 			}
+			debug(new Date().toString+": "+doorState.data);
+			break;
+		default:
+			debug(new Date().toString+": "+doorState.data);
 			break;
 	}
 }

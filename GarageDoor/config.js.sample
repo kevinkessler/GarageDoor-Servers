@@ -12,4 +12,9 @@ config.port=12345;
 config.prefix='garage';
 config.picpath='./jpgs';
 
+config.googleDriveFolder='<<GOOGLE DRIVE FOLDER>>';
+config.googleServiceAccount='<<GOOGLE DRIVE SERVICE ACCOUNT>>';
+config.googlePemFile='<<PEM FILE LOCATION>>';
+
+
 module.exports = config;
