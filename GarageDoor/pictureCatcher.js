@@ -71,11 +71,9 @@ exports.startCatcher=function() {
             
             
             sock.on('close', function(data) {
-                fs.close(desc,function(){
-                    //console.log("Close "+fileName);
-                    lastPic=fileName;
-                    gd.saveGoogleJpg(fileName,config.googleDriveFolder);
-                })
+                lastPic=fileName;
+                fs.closeSync(desc);
+                gd.saveGoogleJpg(fileName,config.googleDriveFolder);
             });
 
             sock.on('error', function(err) {

@@ -40,7 +40,6 @@ exports.saveGoogleJpg=function(jpg,folder) {
           return;
         }
         files.forEach(function(f){
-          console.log(f.id);
           drive.files.insert({
             resource: {
               title: path.basename(jpg),
