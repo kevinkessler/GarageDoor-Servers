@@ -48,6 +48,7 @@ var heartbeat=setInterval(function() {
 },3600*1000);
 pc.startCatcher();
 sendConfig();
+fcPic=1;
 
 function smsMessage(mes) {
 	smtp.sendMail({
@@ -125,10 +126,10 @@ function selectEvent(doorState) {
 			takePicture();
 			fcPic=1;
 			break;
-		case "PowerDown" :
+		case "PICTURE-SAVED" :
 			if(fcPic==1) {
 				smsPicMessage("Garage Door Automatically Closed", pc.getLastFile());
-				fcPic=0;
+//				fcPic=0;
 			}
 			debug(new Date().toString+": "+doorState.data);
 			break;
