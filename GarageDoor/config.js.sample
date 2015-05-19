@@ -16,5 +16,6 @@ config.googleDriveFolder='<<GOOGLE DRIVE FOLDER>>';
 config.googleServiceAccount='<<GOOGLE DRIVE SERVICE ACCOUNT>>';
 config.googlePemFile='<<PEM FILE LOCATION>>';
 
+config.thingspeak_apikey='<<THINGSPEAK API KEY>>';
 
 module.exports = config;

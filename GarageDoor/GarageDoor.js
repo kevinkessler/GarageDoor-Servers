@@ -16,6 +16,11 @@ var closeTime=config.closeTime;
 var holdTimeout;
 var heartbeatTimer;
 var fcPic=0;
+var fcEvent=0;
+var fcStatus;
+
+var tempAccum=0;
+var tempCount=0;
 
 var es= new EventSource('https://api.spark.io/v1/devices/'+deviceID+'/events?access_token='+access_token);
 debug('New Event Source '+util.inspect(es,{ showHidden: true, depth: null }));
@@ -94,11 +99,24 @@ function selectEvent(doorState) {
 		case "OPEN":
 			console.log(new Date().toString()+": Door is Opened");
 			debug(new Date().toString+": "+doorState.data);
+			if(fcEvent==1) {
+				takePicture();
+				fcPic=1;
+				fcStatus="OPEN";
+				fcEvent=0;
+			}
 			break;
 		case "CLOSED":
 			clearInterval(holdTimeout);
 			console.log(new Date().toString()+": Door is closed");
 			debug(new Date().toString+": "+doorState.data);
+			if(fcEvent==1) {
+				takePicture();
+				fcPic=1;
+				fcStatus="CLOSED";
+				fcEvent=0;
+			}
+
 			break;
 		case "HOLD-OPEN":
 			console.log(new Date().toString()+": Hold Button Activated");
@@ -123,12 +141,22 @@ function selectEvent(doorState) {
 		case "FORCE-CLOSE":
 			console.log(new Date().toString()+": Force Closed");
 			debug(new Date().toString+": "+doorState.data);
-			takePicture();
-			fcPic=1;
+			fcEvent=1;
 			break;
 		case "PICTURE-SAVED" :
 			if(fcPic==1) {
-				smsPicMessage("Garage Door Automatically Closed", pc.getLastFile());
+				if(fcStatus=="OPEN") {
+					smsPicMessage("Garage Door Close Failure!!!", pc.getLastFile());
+				}
+				else if(fcStatus=="CLOSED"){
+					smsPicMessage("Garage Door Automatically Closed Successfully", pc.getLastFile());
+				}
+				else {
+					smsPicMessage("Texting Picture on demand", pc.getLastFile());
+				}
+				
+				fcStatus="";
+				fcEvent=0;
 //				fcPic=0;
 			}
 			debug(new Date().toString+": "+doorState.data);
@@ -142,6 +170,27 @@ function selectEvent(doorState) {
 function sendTemp(data)
 {
 	//console.log('Temperature: '+data.substr(5,data.length-5));
+/*	tempAccum+=Number(data.substr(5,data.length-5));
+	if(++tempCount==120) {
+		tempAccum=0;
+		tempCount=0;
+	} */
+
+	var postData="api_key="+config.thingspeak_apikey+"&field1="+data.substr(5,data.length-5);
+	var options={
+		hostname: 'api.thingspeak.com',
+		port: 443,
+		path: '/update',
+		method: 'POST'
+	}
+
+	var req=https.request(options);
+	req.on('error', function(e) {
+		console.log('problem with thingspeak request: ' + e.message);
+	});
+	
+	req.write(postData);
+	req.end();
 }
 
 function sendConfig() {
