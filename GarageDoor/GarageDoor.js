@@ -157,7 +157,7 @@ function selectEvent(doorState) {
 				
 				fcStatus="";
 				fcEvent=0;
-//				fcPic=0;
+				fcPic=0;
 			}
 			debug(new Date().toString+": "+doorState.data);
 			break;

@@ -5,6 +5,8 @@ config.access_token='<<ACCESS TOKEN>>';
 config.toAddrs="<<ALERT EMAIL ADDRESSES>>";
 config.holdTime=3600;
 config.heartbeatTimeout=300;
+config.maxAgeInSecs=172800;
+
 config.gmailUser="<<GMAIL USER ID>>@gmail.com";
 config.gmailPass="<<GMAIl PASSWORD>>";
 
