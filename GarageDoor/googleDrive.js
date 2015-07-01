@@ -1,7 +1,8 @@
 var google = require('googleapis')
     ,fs = require('fs')
     ,path = require('path')
-    ,config = require('./config.js');
+    ,config = require('./config.js')
+    ,wrapper=require('./logwrapper.js');
 
 
 exports.saveGoogleJpg=function(jpg,folder) {
@@ -14,15 +15,14 @@ exports.saveGoogleJpg=function(jpg,folder) {
 
    var stream=fs.createReadStream(jpg);
    stream.on('error',function(error){
-    console.error("Cannot Open "+jpg);
-    console.error(error);
+    wrapper.log("ERROR","Cannot Open "+jpg+" "+error);
     return;
    });
 
    stream.on('readable',function(){
     jwtClient.authorize(function(err, tokens) {
       if (err) {
-        console.log(err);
+        wrapper.log("ERROR",err);
         return;
       }
 
@@ -30,16 +30,17 @@ exports.saveGoogleJpg=function(jpg,folder) {
       drive.files.list({q: "mimeType='application/vnd.google-apps.folder' and title='"+folder+"'"},
           function(err1,resp){
         if(resp == null) {
-          console.error("Google File list for "+folder+" failed");
+          wrapper.log("ERROR","Google File list for "+folder+" failed");
           return;
         }
 
         var files=resp.items;
         if(files.length == 0 ){
-          console.error("Folder "+folder+" does not exist");
+          wrapper.log("ERROR","Folder "+folder+" does not exist");
           return;
         }
         files.forEach(function(f){
+          wrapper.log("DEBUG","Folder id "+f.id);
           drive.files.insert({
             resource: {
               title: path.basename(jpg),
@@ -52,8 +53,7 @@ exports.saveGoogleJpg=function(jpg,folder) {
             }
           }, function(err2,resp){
             if(err2) {
-              console.error("Error storing image to Google Drive");
-              console.error(err2);
+              wrapper.log("ERROR","Error storing image to Google Drive "+err2);
             }
           });
         });

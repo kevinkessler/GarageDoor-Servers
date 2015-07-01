@@ -3,7 +3,8 @@ var config=require('./config.js');
 var net=require('net')
     ,fs = require('fs')
     ,path = require('path')
-    ,gd = require('./googleDrive.js');
+    ,gd = require('./googleDrive.js')
+    ,wrapper=require('./logwrapper.js');
 
 var HOST = '0.0.0.0';
 var PORT = config.port;
@@ -14,8 +15,7 @@ exports.startCatcher=function() {
         fs.readdir(config.picpath, function(err,files){
             if(err)
             {
-                console.log("Error Reading Directory:"+config.picpath);
-                console.log(err);
+                wrapper.log("ERROR","Error Reading Directory:"+config.picpath+" "+err);
             }
 
             files.forEach(function(f){
@@ -23,21 +23,21 @@ exports.startCatcher=function() {
                 fs.stat(fname,function(err,stats){
                     if(err)
                     {
-                        console.log("Error stating file:"+fname);
-                        console.log(err);
+                        wrapper.log("ERROR","Error stating file:"+fname+" "+err);
+
                     }
                     if(stats.isFile())
                     {
                         var age=Date.now() - stats.mtime
-                        if(age > config.maxAgeInSecs * 1000)
+                        if(age > config.maxAgeInSecs * 1000) {
                         fs.unlink(fname,function(err){
                             if(err)
                             {
-                                console.log("Error deleting file:"+fname);
-                                console.log(err);
+                                wrapper.log("ERROR","Error deleting file:"+fname+" "+err);
                             }
-                            console.log(fname+" deleted");
+                            wrapper.log("DEBUG",fname+" deleted");
                         });
+			}
                     }
                 });
             });
@@ -47,13 +47,13 @@ exports.startCatcher=function() {
     net.createServer(function(sock) {
         
         sock.setEncoding('binary');
-        console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
+        wrapper.log("CONNECT",sock.remoteAddress +':'+ sock.remotePort);
         var desc;
         var fileName=config.picpath+'/'+config.prefix+tStamp(new Date())+'.jpg';
-        //console.log('Filename: '+fileName);
+        wraper.log("DEBUG",'Filename: '+fileName);
         fs.open(fileName,'a',0666, function (err,fd){
             if(err)
-                console.error(err);
+                wrapper.log("ERROR","File Open Error "+err);
             desc=fd;
 
             sock.on('data', function(data) {
@@ -61,8 +61,7 @@ exports.startCatcher=function() {
                 var buf=new Buffer(data);
                 fs.write(desc,data,null,'binary',function(err,written){
                     if(err) {
-                        console.error(err);
-                        console.log(fd);
+                        wrapper.log("ERROR","File Write Error "+err);
                     }
 
                 });
@@ -77,7 +76,7 @@ exports.startCatcher=function() {
             });
 
             sock.on('error', function(err) {
-                console.log(err);
+                wrapper.log("ERROR","Socker Error "+err);
             });
         });
 
@@ -85,7 +84,7 @@ exports.startCatcher=function() {
     }).listen(PORT, HOST);
 
     var now=tStamp(new Date());
-    console.log('Server listening on ' + HOST +':'+ PORT+" at "+now);
+    wrapper.log("DEBUG",'Server listening on ' + HOST +':'+ PORT+" at "+now);
 }
 
 exports.getLastFile=function() {

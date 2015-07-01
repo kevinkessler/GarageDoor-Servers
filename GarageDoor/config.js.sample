@@ -14,10 +14,14 @@ config.port=12345;
 config.prefix='garage';
 config.picpath='./jpgs';
 
+config.logglyToken='<<LOGGLY TOKEN>>';
+config.logglySubdomain='<<LOGGLY SUBDOMAIN>>';
+
 config.googleDriveFolder='<<GOOGLE DRIVE FOLDER>>';
 config.googleServiceAccount='<<GOOGLE DRIVE SERVICE ACCOUNT>>';
 config.googlePemFile='<<PEM FILE LOCATION>>';
 
-config.thingspeak_apikey='<<THINGSPEAK API KEY>>';
+config.thingspeak_minute_key='<<THINGSPEAK MINUTE KEY>>';
+config.thingspeak_hour_key='<<THINGSPEAK HOUR KEY>>';
 
 module.exports = config;

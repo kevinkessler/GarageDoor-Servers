@@ -2,11 +2,13 @@ var config=require('./config.js');
 
 var EventSource = require('eventsource')
 	,nodemailer=require('nodemailer')
-	,debug=require('debug')('texter')
 	,util=require('util')
 	,pc=require('./pictureCatcher.js')
 	,https=require('https')
-	,os=require('os');
+	,os=require('os')
+	,wrapper=require('./logwrapper.js');
+ 
+
 
 var deviceID=config.deviceID;
 var access_token=config.access_token;
@@ -19,11 +21,13 @@ var fcPic=0;
 var fcEvent=0;
 var fcStatus;
 
-var tempAccum=0;
-var tempCount=0;
+var tempMinAccum=0;
+var tempMinCount=0;
+var tempHourAccum=0;
+var tempHourCount=0;
 
 var es= new EventSource('https://api.spark.io/v1/devices/'+deviceID+'/events?access_token='+access_token);
-debug('New Event Source '+util.inspect(es,{ showHidden: true, depth: null }));
+wrapper.log("DEBUG",'New Event Source '+util.inspect(es,{ showHidden: true, depth: null }));
 
 var smtp=nodemailer.createTransport({
 	service:"Gmail",
@@ -33,16 +37,15 @@ var smtp=nodemailer.createTransport({
 	}
 });
 
-debug('New Mailer '+util.inspect(smtp,{ showHidden: true, depth: null }));
+wrapper.log("DEBUG",'New Mailer '+util.inspect(smtp,{ showHidden: true, depth: null }));
 
 es.addEventListener("garagedoor-event", function(e) {
 	var doorState = JSON.parse(e.data);
-	//debug(util.inspect(e));
 
 	clearTimeout(heartbeatTimer);
 	heartbeatTimer=setTimeout(function() {
 		smsMessage("!!!Heartbeat Failure!!!");
-		console.log(new Date().toString()+": Heartbeat Failure");
+		wrapper.log("ERROR","Heartbeat Failure");
    },config.heartbeatTimeout*1000);
 	
 	selectEvent(doorState);	
@@ -62,9 +65,9 @@ function smsMessage(mes) {
 		text: mes
 	}, function(error,response) {
 		if(error) {
-			console.error(error);
+			wrapper.log("ERROR","SMSMessage Error "+error);
 		}else{
-			debug(new Date().toString()+": Message sent "+util.inspect(response));
+			wrapper.log("DEBUG","Message sent "+util.inspect(response));
 		}
 	});
 }
@@ -82,9 +85,9 @@ function smsPicMessage(mes,fileName) {
 		}]
 	}, function(error,response) {
 		if(error) {
-			console.error(error);
+			wrapper.log("ERROR","SMS PIC Message Error "+error);
 		}else{
-			debug(new Date().toString()+": Message sent "+util.inspect(response));
+			wrapper.log("DEBUG","Message sent "+util.inspect(response));
 		}
 	});
 }
@@ -95,10 +98,10 @@ function selectEvent(doorState) {
 		return;
 	}
 
+	wrapper.log(doorState.data,"Door State Change");
+
 	switch(doorState.data) {
 		case "OPEN":
-			console.log(new Date().toString()+": Door is Opened");
-			debug(new Date().toString+": "+doorState.data);
 			if(fcEvent==1) {
 				takePicture();
 				fcPic=1;
@@ -108,8 +111,6 @@ function selectEvent(doorState) {
 			break;
 		case "CLOSED":
 			clearInterval(holdTimeout);
-			console.log(new Date().toString()+": Door is closed");
-			debug(new Date().toString+": "+doorState.data);
 			if(fcEvent==1) {
 				takePicture();
 				fcPic=1;
@@ -119,28 +120,19 @@ function selectEvent(doorState) {
 
 			break;
 		case "HOLD-OPEN":
-			console.log(new Date().toString()+": Hold Button Activated");
-			debug(new Date().toString+": "+doorState.data);
 			takePicture();
 			holdTimeout=setInterval(function() {
-				console.log("Garage Door Held Open Alert");
-				debug(new Date().toString+": "+doorState.data);
+				wrapper.log("ALERT","Garage Door Held Open Alert");
 				smsPicMessage("Garage Door is Being Held Open",pc.getLastFile());
 				takePicture();
 			},config.holdTime);
 			break;
 		case "CONFIGURE":
-			console.log(new Date().toString()+": Configure Requested");
-			debug(new Date().toString+": "+doorState.data);
 			sendConfig();
 			break;
 		case "MOTION":
-			console.log(new Date().toString()+": Motion Detected");
-			debug(new Date().toString+": "+doorState.data);
 			break;
 		case "FORCE-CLOSE":
-			console.log(new Date().toString()+": Force Closed");
-			debug(new Date().toString+": "+doorState.data);
 			fcEvent=1;
 			break;
 		case "PICTURE-SAVED" :
@@ -159,24 +151,40 @@ function selectEvent(doorState) {
 				fcEvent=0;
 				fcPic=0;
 			}
-			debug(new Date().toString+": "+doorState.data);
 			break;
 		default:
-			debug(new Date().toString+": "+doorState.data);
 			break;
 	}
 }
 
 function sendTemp(data)
 {
-	//console.log('Temperature: '+data.substr(5,data.length-5));
-/*	tempAccum+=Number(data.substr(5,data.length-5));
-	if(++tempCount==120) {
-		tempAccum=0;
-		tempCount=0;
-	} */
+	tempMinAccum+=Number(data.substr(5,data.length-5));
+	tempHourAccum+=Number(data.substr(5,data.length-5));
 
-	var postData="api_key="+config.thingspeak_apikey+"&field1="+data.substr(5,data.length-5);
+	if(++tempMinCount==2)
+	{
+		wrapper.log("DEBUG","Temperature Minute Sent "+tempMinAccum/tempMinCount);
+ 		thingspeakRequest(config.thingspeak_minute_key,tempMinAccum/tempMinCount);
+ 		tempMinCount=0;
+ 		tempMinAccum=0;
+	}
+
+	if(++tempHourCount==120)
+	{
+		wrapper.log("DEBUG","Temperature Hour Sent "+tempHourAccum/tempHourCount);
+ 		thingspeakRequest(config.thingspeak_hour_key,tempHourAccum/tempHourCount);
+ 		tempHourCount=0;
+ 		tempHourAccum=0;
+	}
+
+
+
+}
+
+function thingspeakRequest(key,gTemp)
+{
+	var postData="api_key="+key+"&field1="+gTemp;
 	var options={
 		hostname: 'api.thingspeak.com',
 		port: 443,
@@ -186,13 +194,13 @@ function sendTemp(data)
 
 	var req=https.request(options);
 	req.on('error', function(e) {
-		console.log('problem with thingspeak request: ' + e.message);
+		wrapper.log("ERROR",'Problem with thingspeak request: ' + e.message);
 	});
-	
+
 	req.write(postData);
 	req.end();
-}
 
+}
 function sendConfig() {
 	sparkRequest("config~"+os.hostname()+":"+config.port);
 //	sparkRequest("config~"+"api.192.168.1.6.xip.io"+":"+config.port);
@@ -219,19 +227,15 @@ function sparkRequest(command){
 	}
 
 	var req=https.request(options);
-/*	var req=https.request(options,function(res) {
-		console.log('STATUS: ' + res.statusCode);
-		console.log('HEADERS: ' + JSON.stringify(res.headers));
-		res.setEncoding('utf8');
-		res.on('data', function (chunk) {
-			console.log('BODY: ' + chunk);
-		});
-	});*/
+
 
 	req.on('error', function(e) {
-		console.log('problem with request: ' + e.message);
+		wrapper.log("ERROR",'Problem with request: ' + e.message);
 	});
 
 	req.write(postData);
 	req.end();
 }
+
+
+
