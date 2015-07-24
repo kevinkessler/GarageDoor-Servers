@@ -56,7 +56,6 @@ var heartbeat=setInterval(function() {
 },3600*1000);
 pc.startCatcher();
 sendConfig();
-fcPic=1;
 
 function smsMessage(mes) {
 	smtp.sendMail({
@@ -73,15 +72,16 @@ function smsMessage(mes) {
 }
 
 function smsPicMessage(mes,fileName) {
+	smsMessage(mes);
 	smtp.sendMail({
 		from: "Home Automation <"+config.gmailUser+">",
 		to: toAddrs,
-		text: mes,
-		html: '<img src="cid:me@kkessler.com"/>',
+		html: mes+'<img src="cid:me@kkessler.com"/>',
 		attachments: [{
 			filename: 'image.jpg',
 			path: fileName,
-			cid: 'me@kkessler.com'
+			cid: 'me@kkessler.com',
+			contentDisposition: 'inline'
 		}]
 	}, function(error,response) {
 		if(error) {

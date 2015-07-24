@@ -50,7 +50,7 @@ exports.startCatcher=function() {
         wrapper.log("CONNECT",sock.remoteAddress +':'+ sock.remotePort);
         var desc;
         var fileName=config.picpath+'/'+config.prefix+tStamp(new Date())+'.jpg';
-        wraper.log("DEBUG",'Filename: '+fileName);
+        wrapper.log("DEBUG",'Filename: '+fileName);
         fs.open(fileName,'a',0666, function (err,fd){
             if(err)
                 wrapper.log("ERROR","File Open Error "+err);
