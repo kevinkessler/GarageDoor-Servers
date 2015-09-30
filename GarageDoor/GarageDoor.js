@@ -17,6 +17,9 @@ var closeTime=config.closeTime;
 
 var holdTimeout;
 var heartbeatTimer;
+var deathTimer;
+var supressTimer;
+var supressFlag=0;
 var fcPic=0;
 var fcEvent=0;
 var fcStatus;
@@ -47,15 +50,32 @@ es.addEventListener("garagedoor-event", function(e) {
 		smsMessage("!!!Heartbeat Failure!!!");
 		wrapper.log("ERROR","Heartbeat Failure");
    },config.heartbeatTimeout*1000);
-	
+
+// EventSource errors are not throw reliably so just restart the process if 
+// nothing is heard for 2 hours
+
+	clearTimeout(deathTimer);
+	deathTimer=setTimeout(function() {
+		smsMessage("!!!No Events for 2 Hours, restarting!!!");
+		wrapper.log("ERROR","Server Restarted");
+		setTimeout(function() {
+			process.exit(1);
+		},10000);
+	},2*60*60*1000);
+
 	selectEvent(doorState);	
 });
 
+es.addEventListener("error", function(e) {
+	wrapper.log("ERROR","Event Listener Error "+JSON.parse(e));
+},false);
+	
 var heartbeat=setInterval(function() {
 	sendConfig();
 },3600*1000);
 pc.startCatcher();
 sendConfig();
+//fcPic=1;
 
 function smsMessage(mes) {
 	smtp.sendMail({
@@ -93,12 +113,14 @@ function smsPicMessage(mes,fileName) {
 }
 function selectEvent(doorState) {
 
+	console.log("Event:"+doorState.data);
+
 	if(doorState.data.substr(0,5)=="Temp:") {
 		sendTemp(doorState.data);
 		return;
 	}
 
-	wrapper.log(doorState.data,"Door State Change");
+	var dontLog=0;
 
 	switch(doorState.data) {
 		case "OPEN":
@@ -107,6 +129,11 @@ function selectEvent(doorState) {
 				fcPic=1;
 				fcStatus="OPEN";
 				fcEvent=0;
+			}
+			if(supressFlag==1) {
+				clearTimeout(supressTimer);
+				dontLog=1;
+				supressFlag=0;
 			}
 			break;
 		case "CLOSED":
@@ -118,6 +145,11 @@ function selectEvent(doorState) {
 				fcEvent=0;
 			}
 
+			if(supressFlag==1) {
+				clearTimeout(supressTimer);
+				dontLog=1;
+				supressFlag=0;
+			}
 			break;
 		case "HOLD-OPEN":
 			takePicture();
@@ -130,7 +162,16 @@ function selectEvent(doorState) {
 		case "CONFIGURE":
 			sendConfig();
 			break;
-		case "MOTION":
+		case "MOVING":
+			// Supress spurious state changes caused by virbations
+			// Don't log if you get a MOVING and a CLOSED or OPEN
+			// within 1 second
+			supressFlag=1;
+			dontLog=1;
+			supressTime=setTimeout(function() {
+				wrapper.log("MOVING","Door State Change");
+				supressFlag=0;
+			},1000);
 			break;
 		case "FORCE-CLOSE":
 			fcEvent=1;
@@ -154,6 +195,10 @@ function selectEvent(doorState) {
 			break;
 		default:
 			break;
+	}
+	if(!dontLog)
+	{
+		wrapper.log(doorState.data,"Door State Change");
 	}
 }
 
